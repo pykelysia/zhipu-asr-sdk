@@ -5,6 +5,8 @@
 package asr
 
 import (
+	"context"
+	"fmt"
 	"net/http"
 	"strings"
 )
@@ -68,4 +70,26 @@ func (c *Client) newRequest(body *multipartBody) (*http.Request, error) {
 	req.Header.Set("Authorization", "Bearer "+c.apiKey)
 	req.Header.Set("Content-Type", body.contentType)
 	return req, nil
+}
+
+// execute 发送转写请求并校验状态码，返回待消费的响应；
+// 调用方负责关闭 resp.Body。
+func (c *Client) execute(ctx context.Context, req TranscriptionRequest) (*http.Response, error) {
+	body, err := req.buildMultipartBody()
+	if err != nil {
+		return nil, err
+	}
+	httpReq, err := c.newRequest(body)
+	if err != nil {
+		return nil, err
+	}
+	resp, err := c.httpClient.Do(httpReq.WithContext(ctx))
+	if err != nil {
+		return nil, fmt.Errorf("asr: 请求失败: %w", err)
+	}
+	if resp.StatusCode < 200 || resp.StatusCode > 299 {
+		defer resp.Body.Close()
+		return nil, parseAPIError(resp)
+	}
+	return resp, nil
 }

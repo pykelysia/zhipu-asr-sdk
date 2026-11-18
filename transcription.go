@@ -46,25 +46,12 @@ type TranscriptionResponse struct {
 // 服务端协议不含 usage/token 字段，本 SDK 同样不提供用量信息。
 func (c *Client) Transcribe(ctx context.Context, req TranscriptionRequest) (*TranscriptionResponse, error) {
 	req.Stream = false // 防御：同步接口不允许携带 stream=true
-	body, err := req.buildMultipartBody()
-	if err != nil {
-		return nil, err
-	}
-	httpReq, err := c.newRequest(body)
-	if err != nil {
-		return nil, err
-	}
-	httpReq = httpReq.WithContext(ctx)
 
-	resp, err := c.httpClient.Do(httpReq)
+	resp, err := c.execute(ctx, req)
 	if err != nil {
-		return nil, fmt.Errorf("asr: 请求失败: %w", err)
+		return nil, err
 	}
 	defer resp.Body.Close()
-
-	if resp.StatusCode < 200 || resp.StatusCode > 299 {
-		return nil, parseAPIError(resp)
-	}
 
 	var out TranscriptionResponse
 	if err := json.NewDecoder(resp.Body).Decode(&out); err != nil {

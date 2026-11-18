@@ -3,6 +3,7 @@ package asr
 import (
 	"bytes"
 	"context"
+	"encoding/base64"
 	"encoding/json"
 	"io"
 	"mime"
@@ -236,6 +237,31 @@ func TestTranscribe_AudioTooLarge(t *testing.T) {
 	})
 	if err == nil || !strings.Contains(err.Error(), "25MB") {
 		t.Errorf("超过 25MB 应报错，实际: %v", err)
+	}
+}
+
+// TestTranscribe_Base64TooLarge 覆盖 Base64 解码后超过 25MB 的预检。
+func TestTranscribe_Base64TooLarge(t *testing.T) {
+	big := base64.StdEncoding.EncodeToString(bytes.Repeat([]byte{0}, maxAudioSize+1024))
+	_, err := NewClient("k").Transcribe(context.Background(), TranscriptionRequest{
+		FileBase64: big,
+		Model:      ModelGLMASR2512,
+	})
+	if err == nil || !strings.Contains(err.Error(), "25MB") {
+		t.Errorf("Base64 解码后超限应报错，实际: %v", err)
+	}
+}
+
+// TestTranscribe_Base64WithinLimitNotRejected 确保限内 Base64 不被预检误拒
+// （预检按解码上界减去 padding 计算，限内的请求应照常发出）。
+func TestTranscribe_Base64WithinLimitNotRejected(t *testing.T) {
+	ok := base64.StdEncoding.EncodeToString(bytes.Repeat([]byte{0}, 1024))
+	_, srv := captureMultipart(t, http.StatusOK, `{"text":"ok"}`, nil)
+	if _, err := NewClient("k", WithBaseURL(srv.URL)).Transcribe(context.Background(), TranscriptionRequest{
+		FileBase64: ok,
+		Model:      ModelGLMASR2512,
+	}); err != nil {
+		t.Errorf("限内 Base64 不应被预检拒绝: %v", err)
 	}
 }
 

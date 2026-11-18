@@ -2,6 +2,7 @@ package asr
 
 import (
 	"bytes"
+	"encoding/base64"
 	"errors"
 	"fmt"
 	"io"
@@ -39,12 +40,8 @@ func (r *TranscriptionRequest) buildMultipartBody() (*multipartBody, error) {
 		if name == "" {
 			name = "audio.wav"
 		}
-		n, err := writeFormFile(w, "file", name, r.File)
-		if err != nil {
-			return nil, fmt.Errorf("asr: 写入音频文件失败: %w", err)
-		}
-		if n > maxAudioSize {
-			return nil, fmt.Errorf("asr: 音频大小 %d 字节超过上限 25MB", n)
+		if err := writeAudioFile(w, name, r.File); err != nil {
+			return nil, err
 		}
 		audioSet = true
 	case r.FilePath != "":
@@ -53,15 +50,16 @@ func (r *TranscriptionRequest) buildMultipartBody() (*multipartBody, error) {
 			return nil, fmt.Errorf("asr: 打开音频文件失败: %w", err)
 		}
 		defer f.Close()
-		n, err := writeFormFile(w, "file", filepath.Base(r.FilePath), f)
-		if err != nil {
-			return nil, fmt.Errorf("asr: 写入音频文件失败: %w", err)
-		}
-		if n > maxAudioSize {
-			return nil, fmt.Errorf("asr: 音频大小 %d 字节超过上限 25MB", n)
+		if err := writeAudioFile(w, filepath.Base(r.FilePath), f); err != nil {
+			return nil, err
 		}
 		audioSet = true
 	case r.FileBase64 != "":
+		// 解码后同样受 ≤25MB 约束。DecodedLen 是忽略 padding 折算的上界：
+		// 减去最多 2 个 padding 字符后仍超限才判违规，避免恰好 25MB 的边界误拒。
+		if n := base64.StdEncoding.DecodedLen(len(r.FileBase64)); n-2 > maxAudioSize {
+			return nil, fmt.Errorf("asr: Base64 解码后约 %d 字节，超过上限 25MB", n)
+		}
 		if err := w.WriteField("file_base64", r.FileBase64); err != nil {
 			return nil, err
 		}
@@ -112,4 +110,16 @@ func writeFormFile(w *multipart.Writer, field, filename string, src io.Reader) (
 		return 0, err
 	}
 	return io.Copy(dst, src)
+}
+
+// writeAudioFile 写入 file binary part 并校验 25MB 上限。
+func writeAudioFile(w *multipart.Writer, filename string, src io.Reader) error {
+	n, err := writeFormFile(w, "file", filename, src)
+	if err != nil {
+		return fmt.Errorf("asr: 写入音频文件失败: %w", err)
+	}
+	if n > maxAudioSize {
+		return fmt.Errorf("asr: 音频大小 %d 字节超过上限 25MB", n)
+	}
+	return nil
 }

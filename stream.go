@@ -55,23 +55,10 @@ type TranscriptionStream struct {
 // 连接关闭即流结束；建议通过 ctx 控制整体读超时。
 func (c *Client) TranscribeStream(ctx context.Context, req TranscriptionRequest) (*TranscriptionStream, error) {
 	req.Stream = true
-	body, err := req.buildMultipartBody()
-	if err != nil {
-		return nil, err
-	}
-	httpReq, err := c.newRequest(body)
-	if err != nil {
-		return nil, err
-	}
-	httpReq = httpReq.WithContext(ctx)
 
-	resp, err := c.httpClient.Do(httpReq)
+	resp, err := c.execute(ctx, req)
 	if err != nil {
-		return nil, fmt.Errorf("asr: 请求失败: %w", err)
-	}
-	if resp.StatusCode < 200 || resp.StatusCode > 299 {
-		defer resp.Body.Close()
-		return nil, parseAPIError(resp)
+		return nil, err
 	}
 
 	scanner := bufio.NewScanner(resp.Body)

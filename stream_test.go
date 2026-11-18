@@ -8,23 +8,10 @@ import (
 	"testing"
 )
 
-// startSSEServer 启动返回给定 SSE 报文的测试服务，并捕获请求表单。
+// startSSEServer 启动返回给定 SSE 报文的测试服务（text/event-stream），并捕获请求表单。
 func startSSEServer(t *testing.T, status int, sseBody string) (*capturedForm, *httptest.Server) {
 	t.Helper()
-	form := &capturedForm{values: map[string][]string{}}
-	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		if err := r.ParseMultipartForm(maxAudioSize); err != nil {
-			t.Errorf("解析 multipart 失败: %v", err)
-		}
-		for k, v := range r.MultipartForm.Value {
-			form.values[k] = v
-		}
-		w.Header().Set("Content-Type", "text/event-stream")
-		w.WriteHeader(status)
-		_, _ = w.Write([]byte(sseBody))
-	}))
-	t.Cleanup(srv.Close)
-	return form, srv
+	return captureMultipart(t, status, sseBody, map[string]string{"Content-Type": "text/event-stream"})
 }
 
 func TestTranscribeStream_Events(t *testing.T) {
