@@ -1,0 +1,15 @@
+# 二进制构建产物
+*.exe
+*.exe~
+*.dll
+*.so
+*.dylib
+*.test
+*.out
+
+# 测试与工具缓存
+coverage.txt
+
+# 编辑器
+.idea/
+.vscode/
