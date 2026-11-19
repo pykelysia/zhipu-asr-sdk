@@ -9,7 +9,7 @@ import (
 	"strings"
 	"time"
 
-	asr "github.com/pyke/zhipu-asr-sdk"
+	asr "github.com/pykelysia/zhipu-asr-sdk"
 )
 
 // 同步转写：上传本地音频文件，一次性返回完整文本。

@@ -15,7 +15,7 @@
 ## 安装
 
 ```bash
-go get github.com/pyke/zhipu-asr-sdk
+go get github.com/pykelysia/zhipu-asr-sdk
 ```
 
 ## 快速开始

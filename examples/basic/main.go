@@ -14,7 +14,7 @@ import (
 	"strings"
 	"time"
 
-	asr "github.com/pyke/zhipu-asr-sdk"
+	asr "github.com/pykelysia/zhipu-asr-sdk"
 )
 
 func main() {
