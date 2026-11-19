@@ -80,10 +80,12 @@ if err := stream.Err(); err != nil {
 
 ## 客户端配置
 
+`WithBaseURL` 覆盖默认 API 根地址（默认 `https://open.bigmodel.cn/api/paas/v4`），填到含版本前缀的同一层级，SDK 会固定拼接 `/audio/transcriptions`：
+
 ```go
 client := asr.NewClient(
     os.Getenv("ZHIPU_API_KEY"),
-    asr.WithBaseURL("https://your-gateway.example.com"), // 覆盖官方端点
+    asr.WithBaseURL("https://your-gateway.example.com/api/paas/v4"), // 填到版本前缀层级
     asr.WithHTTPClient(&http.Client{Timeout: 60 * time.Second}),
 )
 ```

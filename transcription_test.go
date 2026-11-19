@@ -83,7 +83,7 @@ func TestTranscribe_Sync(t *testing.T) {
 	}
 
 	// 请求侧断言
-	if form.method != http.MethodPost || form.path != "/api/paas/v4/audio/transcriptions" {
+	if form.method != http.MethodPost || form.path != "/audio/transcriptions" {
 		t.Errorf("请求行错误: %s %s", form.method, form.path)
 	}
 	if form.auth != "Bearer test-key" {
@@ -290,6 +290,14 @@ func TestBuildMultipartBody_FilePreferred(t *testing.T) {
 	}
 	if len(form.File["file"]) != 1 {
 		t.Fatalf("应发送一个 file part")
+	}
+}
+
+// TestDefaultEndpoint 校验默认配置拼出的完整端点与官方文档一致。
+func TestDefaultEndpoint(t *testing.T) {
+	client := NewClient("k")
+	if got := client.baseURL + transcriptionPath; got != "https://open.bigmodel.cn/api/paas/v4/audio/transcriptions" {
+		t.Errorf("默认完整端点错误: %s", got)
 	}
 }
 

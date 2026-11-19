@@ -12,11 +12,12 @@ import (
 )
 
 const (
-	// DefaultBaseURL 是智谱官方开放平台的根地址。
-	DefaultBaseURL = "https://open.bigmodel.cn"
+	// DefaultBaseURL 是智谱官方开放平台的 API 根地址（含 /api/paas/v4 版本前缀）。
+	// 自定义网关时 WithBaseURL 填到同一层级，固定路径仅有 /audio/transcriptions。
+	DefaultBaseURL = "https://open.bigmodel.cn/api/paas/v4"
 
-	// transcriptionPath 是语音转写接口路径。
-	transcriptionPath = "/api/paas/v4/audio/transcriptions"
+	// transcriptionPath 是语音转写接口的固定路径。
+	transcriptionPath = "/audio/transcriptions"
 )
 
 // Client 是智谱 ASR 的 HTTP 客户端，可安全并发复用。
@@ -29,7 +30,11 @@ type Client struct {
 // Option 用于配置 Client。
 type Option func(*Client)
 
-// WithBaseURL 覆盖默认的官方端点根地址，一般用于测试或代理网关。
+// WithBaseURL 覆盖默认的官方 API 根地址（一般用于测试或代理网关）。
+// 填到与 DefaultBaseURL 相同的层级（即含版本前缀的根地址），
+// SDK 会在其后固定拼接 /audio/transcriptions，例如：
+//
+//	asr.WithBaseURL("https://your-gateway.example.com/api/paas/v4")
 func WithBaseURL(baseURL string) Option {
 	return func(c *Client) {
 		if baseURL != "" {
